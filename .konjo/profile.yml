@@ -1,0 +1,58 @@
+# .konjo/profile.yml
+# TODO: fill this in once the repo's stack is decided — Wall 2 (konjo-gates)
+# reads this file to pick language packs, gate thresholds, and specialist
+# review lanes. See README.md#what-is-kiban for why this can't be generic.
+
+repo: TODO-repo-name
+
+# One or more of: rust, python, typescript, mojo, go, ... — whatever KIBAN
+# ships a lang/* pack for. Delete what doesn't apply.
+stack:
+  - TODO
+
+# Mirrors `stack`, one lang/<name> pack per stack entry.
+packs:
+  - lang/TODO
+
+# Static analysis / formatting gates KIBAN should run (G1). Typical values:
+# fmt-check, clippy, ruff, ruff-format, mypy, vulture, eslint, prettier, tsc.
+format_lint:
+  - TODO
+
+# Contract gates (G1/G2/G4). Common ones: cargo-deny, cargo-audit,
+# coverage-80, complexity, file-size-500, dry, rustdoc, unsafe-budget.
+contract_gates:
+  - coverage-80
+  - complexity
+  - file-size-500
+  - dry
+
+# Mutation testing tool for this stack, or `none` if not applicable yet.
+mutation: none
+
+# kiban-native specialist review lanes for this stack (see kiban's pack
+# docs for what each lang/* pack provides). red-team is appended
+# automatically.
+specialists:
+  - concurrency
+  - api-surface
+
+# Perf "prove" gate — leave disabled until there's a real benchmark harness
+# and a measured noise floor to set min_effect_pct against (see vectro's
+# .konjo/profile.yml for a worked example of activating this).
+prove:
+  enabled: false
+
+killtest: false
+
+# Command KIBAN runs to execute the test suite for this repo.
+verify_cmd: "TODO"
+
+# Command KIBAN runs to auto-format the repo.
+format_cmd: "TODO"
+
+# Which eval corpora this repo's Wall 2 self-test should run.
+eval_corpus:
+  - TODO
+
+overrides: {}

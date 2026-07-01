@@ -1,0 +1,68 @@
+# .github/workflows/konjo-gates.yml
+# The thin per-repo GitHub Actions workflow. The CI plane installs the
+# pinned kiban distribution and runs konjo-gates against the repo's
+# profile. CI never reads ~/.konjo; the gate logic and eval cassettes come
+# from the installed, version-pinned package.
+#
+# Pin KIBAN_REF (.konjo/kiban.ref) to a tag or sha so a kiban change rolls
+# out to this repo on a deliberate schedule, not all repos at once.
+#
+# Toolchain setup below is conditional on what the repo actually contains,
+# so most stacks work without editing this file — fill in .konjo/profile.yml
+# and this workflow picks up the rest. Add more conditional setup steps
+# (e.g. Go, Java) following the same `if: hashFiles(...) != ''` pattern.
+
+name: konjo-gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  KIBAN_REF: "v1.1.0"   # the pinned kiban ref for this repo; bump deliberately
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # konjo-gates diffs against the base ref
+
+      - name: Set up Rust toolchain
+        if: hashFiles('Cargo.toml') != ''
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        if: hashFiles('Cargo.toml') != ''
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "konjo-gates-${{ github.repository }}"
+
+      - name: Install cargo gate tools
+        if: hashFiles('Cargo.toml') != ''
+        run: cargo install cargo-deny cargo-mutants --locked
+
+      - name: Set up Node
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Install the whole kiban distribution at the pin. It ships the real
+      # engine (lib, evals) with the konjo-gates entry point and the eval
+      # cassettes, so the orchestrator imports one source of truth and the
+      # replay eval needs no model.
+      - name: Install pinned kiban
+        run: pip install "kiban @ git+https://github.com/konjoai/kiban.git@${KIBAN_REF}"
+
+      - name: Run gates against the repo profile
+        run: konjo-gates --profile .konjo/profile.yml --base "origin/${{ github.base_ref || 'main' }}"
